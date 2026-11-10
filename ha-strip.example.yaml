@@ -1,0 +1,49 @@
+# =============================================================================
+# Esempio di deploy. Copialo nella cartella ESPHome (es. ha-strip.yaml),
+# cambia le substitutions con le TUE entita' e installa.
+# =============================================================================
+
+substitutions:
+  device_name: ha-strip
+  friendly_name: HA Strip
+  # display_rotation: "270"     # striscia capovolta
+
+  # Consumi
+  ent_power_total: sensor.power_total
+  power_warn: "4500"
+  power_limit: "6000"
+  power_limit_label: "6 kW"
+  power_max_scale: "7000"
+
+  # Temperature
+  ent_temp_in: sensor.temperature_indoor
+  ent_temp_out: sensor.temperature_outdoor
+
+  # Luci (light.* o switch.*) - etichette corte, il tasto e' stretto
+  ent_light_1: light.living_room
+  label_light_1: "Sogg."
+  ent_light_2: light.kitchen
+  label_light_2: "Cucina"
+  ent_light_3: light.office
+  label_light_3: "Studio"
+
+  # Pagina stanze
+  ent_room_1: sensor.living_room_temperature
+  label_room_1: "Soggiorno"
+  ent_room_2: sensor.bedroom_1_temperature
+  label_room_2: "Camera 1"
+  ent_room_3: sensor.bedroom_2_temperature
+  label_room_3: "Camera 2"
+  ent_room_4: sensor.bathroom_temperature
+  label_room_4: "Bagno"
+
+packages:
+  ha_strip:
+    url: https://github.com/sysdumped/esphome-ha-panel-ESP32-S3-Touch-LCD-3.49
+    ref: main            # meglio un tag, es. v0.1.0
+    refresh: 1d
+    files:
+      - packages/hardware/waveshare-s3-touch-lcd-349.yaml
+      - packages/base.yaml
+      - packages/ha_data.yaml
+      - packages/ui.yaml

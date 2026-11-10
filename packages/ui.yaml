@@ -1,0 +1,434 @@
+# =============================================================================
+# UI LVGL 640x172 (striscia orizzontale)
+#   Pagina "Casa":   consumo con barra e soglie | orario + temperature | 3 luci
+#   Pagina "Stanze": 4 temperature in fila
+# Cambio pagina: swipe orizzontale, oppure tocco sulla card dell'orario
+# (pagina Casa) o su una stanza (pagina Stanze).
+# =============================================================================
+
+substitutions:
+  bar_width: "206"
+
+globals:
+  - id: g_touch_x0
+    type: int
+    initial_value: "-1"
+  - id: g_touch_y0
+    type: int
+    initial_value: "0"
+  - id: g_touch_x1
+    type: int
+    initial_value: "0"
+  - id: g_touch_y1
+    type: int
+    initial_value: "0"
+  - id: g_touch_t0
+    type: uint32_t
+    initial_value: "0"
+
+script:
+  - id: update_clock
+    then:
+      - lvgl.label.update:
+          id: lbl_clock
+          text: !lambda 'return id(ha_time).now().strftime("%H:%M");'
+
+  - id: update_power
+    then:
+      - lvgl.bar.update:
+          id: bar_power
+          value: !lambda |-
+            float w = id(ha_power_total).state;
+            if (isnan(w) || w < 0) return 0;
+            return (int) std::min(w, (float) ${power_max_scale});
+          indicator:
+            bg_color: !lambda |-
+              float w = id(ha_power_total).state;
+              if (w >= ${power_limit}) return lv_color_hex(0xE5484D);
+              if (w >= ${power_warn})  return lv_color_hex(0xF5A524);
+              return lv_color_hex(0x30A46C);
+      - lvgl.label.update:
+          id: lbl_power
+          text: !lambda |-
+            float w = id(ha_power_total).state;
+            return isnan(w) ? std::string("--") : str_sprintf("%.0f", w);
+      - lvgl.label.update:
+          id: lbl_power_state
+          text: !lambda |-
+            float w = id(ha_power_total).state;
+            if (isnan(w)) return std::string("");
+            if (w >= ${power_limit}) return std::string("Oltre il limite");
+            if (w >= ${power_warn})  return std::string("Vicino al limite");
+            return std::string("Nella norma");
+          text_color: !lambda |-
+            float w = id(ha_power_total).state;
+            if (w >= ${power_limit}) return lv_color_hex(0xE5484D);
+            if (w >= ${power_warn})  return lv_color_hex(0xF5A524);
+            return lv_color_hex(0x30A46C);
+
+  # Swipe orizzontale: < 800 ms, |dx| > 60 px, |dy| < 60 px
+  - id: handle_swipe
+    then:
+      - lambda: |-
+          if (id(g_touch_x0) < 0) return;
+          int dx = id(g_touch_x1) - id(g_touch_x0);
+          int dy = id(g_touch_y1) - id(g_touch_y0);
+          uint32_t dt = millis() - id(g_touch_t0);
+          id(g_touch_x0) = -1;
+          if (dt < 800 && abs(dx) > 60 && abs(dy) < 60) {
+            if (dx < 0) id(swipe_next).execute();
+            else        id(swipe_prev).execute();
+          }
+  - id: swipe_next
+    then:
+      - lvgl.page.next:
+  - id: swipe_prev
+    then:
+      - lvgl.page.previous:
+
+# Indicatore connessione HA (icona wifi)
+interval:
+  - interval: 5s
+    then:
+      - if:
+          condition: api.connected
+          then:
+            - lvgl.label.update:
+                id: ico_status
+                text: "\U000F05A9"
+                text_color: 0x8B93A7
+          else:
+            - lvgl.label.update:
+                id: ico_status
+                text: "\U000F05AA"
+                text_color: 0xE5484D
+
+# -----------------------------------------------------------------------------
+font:
+  - file: "gfonts://Roboto"
+    id: f_small
+    size: 16
+    bpp: 4
+    glyphs: &txt_glyphs " !%+,-./0123456789:;°ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzàèéìòù'·()"
+  - file: "gfonts://Roboto@500"
+    id: f_med
+    size: 24
+    bpp: 4
+    glyphs: *txt_glyphs
+  - file: "gfonts://Roboto@300"
+    id: f_temp
+    size: 30
+    bpp: 4
+    glyphs: " -.0123456789°"
+  - file: "gfonts://Roboto@300"
+    id: f_watt
+    size: 56
+    bpp: 4
+    glyphs: " -0123456789"
+  - file: "gfonts://Roboto@300"
+    id: f_room
+    size: 56
+    bpp: 4
+    glyphs: " -.0123456789°"
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf"
+    id: f_icons
+    size: 20
+    bpp: 4
+    glyphs: &icon_glyphs [
+      "\U000F0241",  # flash
+      "\U000F02DC",  # home
+      "\U000F0590",  # weather-cloudy
+      "\U000F050F",  # thermometer
+      "\U000F05A9",  # wifi
+      "\U000F05AA",  # wifi-off
+      "\U000F0335",  # lightbulb
+    ]
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/v7.4.47/fonts/materialdesignicons-webfont.ttf"
+    id: f_icons_big
+    size: 36
+    bpp: 4
+    glyphs: *icon_glyphs
+
+color:
+  - id: c_bg
+    hex: "0E1116"
+  - id: c_card
+    hex: "181C24"
+  - id: c_muted
+    hex: "8B93A7"
+  - id: c_text
+    hex: "E6E9EF"
+  - id: c_track
+    hex: "252B36"
+
+# -----------------------------------------------------------------------------
+lvgl:
+  displays: [tft_display]
+  touchscreens: [tft_touch]
+  rotation: ${display_rotation}
+  buffer_size: 100%
+  full_refresh: true          # l'AXS15231 non gestisce bene i refresh parziali
+  page_wrap: true
+  bg_color: c_bg
+  on_idle:
+    timeout: ${idle_timeout}
+    then:
+      - light.turn_on:
+          id: display_backlight
+          brightness: ${brightness_idle}
+  theme:
+    button:
+      bg_color: c_track
+      bg_opa: COVER
+      text_color: c_muted
+      radius: 12
+      border_width: 0
+      shadow_width: 0
+      pressed:
+        bg_color: 0x30384A
+      checked:
+        bg_color: 0x3A2A10
+        text_color: 0xF5A524
+  style_definitions:
+    - id: card
+      bg_color: c_card
+      bg_opa: COVER
+      radius: 12
+      border_width: 0
+      pad_all: 12
+      scrollbar_mode: "OFF"
+    - id: muted
+      text_color: c_muted
+
+  pages:
+    # -------------------------------------------------------------------------
+    - id: page_casa
+      bg_color: c_bg
+      text_color: c_text
+      text_font: f_small
+      scrollable: false
+      widgets:
+        # --- Consumo ------------------------------------------------------
+        - obj:
+            styles: card
+            x: 8
+            y: 8
+            width: 230
+            height: 156
+            widgets:
+              - label:
+                  x: 0
+                  y: 6
+                  styles: muted
+                  text_font: f_icons
+                  text: "\U000F0241"
+              - obj:
+                  x: 24
+                  y: -8
+                  width: SIZE_CONTENT
+                  height: SIZE_CONTENT
+                  bg_opa: TRANSP
+                  border_width: 0
+                  pad_all: 0
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_cross: END
+                    pad_column: 4
+                  widgets:
+                    - label:
+                        id: lbl_power
+                        text_font: f_watt
+                        text: "--"
+                    - label:
+                        styles: muted
+                        pad_bottom: 10
+                        text: "W"
+              - bar:
+                  id: bar_power
+                  x: 0
+                  y: 80
+                  width: ${bar_width}
+                  height: 10
+                  min_value: 0
+                  max_value: ${power_max_scale}
+                  value: 0
+                  bg_color: c_track
+                  radius: 5
+                  indicator:
+                    bg_color: 0x30A46C
+                    radius: 5
+              # Tacche delle soglie
+              - obj:
+                  x: ${ (power_warn | int) * (bar_width | int) // (power_max_scale | int) }
+                  y: 76
+                  width: 2
+                  height: 18
+                  bg_color: c_muted
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 0
+              - obj:
+                  x: ${ (power_limit | int) * (bar_width | int) // (power_max_scale | int) }
+                  y: 76
+                  width: 2
+                  height: 18
+                  bg_color: 0xE5484D
+                  bg_opa: COVER
+                  border_width: 0
+                  radius: 0
+              - label:
+                  id: lbl_power_state
+                  align: BOTTOM_LEFT
+                  text: ""
+              - label:
+                  align: BOTTOM_RIGHT
+                  styles: muted
+                  text: "lim. ${power_limit_label}"
+
+        # --- Orario + temperature (tocco = pagina stanze) ------------------
+        - obj:
+            styles: card
+            x: 246
+            y: 8
+            width: 140
+            height: 156
+            clickable: true
+            on_click:
+              - lvgl.page.next:
+            widgets:
+              - label:
+                  id: lbl_clock
+                  align: TOP_LEFT
+                  y: -4
+                  text_font: f_med
+                  text: "--:--"
+              - label:
+                  id: ico_status
+                  align: TOP_RIGHT
+                  text_font: f_icons
+                  text_color: 0xE5484D
+                  text: "\U000F05AA"
+              - label:
+                  x: 0
+                  y: 60
+                  styles: muted
+                  text_font: f_icons
+                  text: "\U000F02DC"
+              - label:
+                  id: lbl_temp_in
+                  align: TOP_RIGHT
+                  y: 50
+                  text_font: f_temp
+                  text: "--"
+              - label:
+                  align: BOTTOM_LEFT
+                  y: -6
+                  styles: muted
+                  text_font: f_icons
+                  text: "\U000F0590"
+              - label:
+                  id: lbl_temp_out
+                  align: BOTTOM_RIGHT
+                  text_font: f_temp
+                  text: "--"
+
+        # --- Luci ----------------------------------------------------------
+        - button:
+            id: btn_light_1
+            x: 394
+            y: 8
+            width: 74
+            height: 156
+            on_click:
+              - homeassistant.action:
+                  action: homeassistant.toggle
+                  data:
+                    entity_id: ${ent_light_1}
+            widgets:
+              - label: {align: TOP_MID, y: 28, text_font: f_icons_big, text: "\U000F0335"}
+              - label: {align: BOTTOM_MID, y: -8, width: 68, long_mode: DOT, text_align: CENTER, text: "${label_light_1}"}
+        - button:
+            id: btn_light_2
+            x: 474
+            y: 8
+            width: 74
+            height: 156
+            on_click:
+              - homeassistant.action:
+                  action: homeassistant.toggle
+                  data:
+                    entity_id: ${ent_light_2}
+            widgets:
+              - label: {align: TOP_MID, y: 28, text_font: f_icons_big, text: "\U000F0335"}
+              - label: {align: BOTTOM_MID, y: -8, width: 68, long_mode: DOT, text_align: CENTER, text: "${label_light_2}"}
+        - button:
+            id: btn_light_3
+            x: 554
+            y: 8
+            width: 74
+            height: 156
+            on_click:
+              - homeassistant.action:
+                  action: homeassistant.toggle
+                  data:
+                    entity_id: ${ent_light_3}
+            widgets:
+              - label: {align: TOP_MID, y: 28, text_font: f_icons_big, text: "\U000F0335"}
+              - label: {align: BOTTOM_MID, y: -8, width: 68, long_mode: DOT, text_align: CENTER, text: "${label_light_3}"}
+
+    # -------------------------------------------------------------------------
+    - id: page_stanze
+      bg_color: c_bg
+      text_color: c_text
+      text_font: f_small
+      scrollable: false
+      widgets:
+        - obj:
+            styles: card
+            x: 8
+            y: 8
+            width: 148
+            height: 156
+            clickable: true
+            on_click: [lvgl.page.previous]
+            widgets:
+              - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
+              - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_1}"}
+              - label: {id: lbl_room_1, align: BOTTOM_RIGHT, text_font: f_room, text: "--"}
+        - obj:
+            styles: card
+            x: 164
+            y: 8
+            width: 148
+            height: 156
+            clickable: true
+            on_click: [lvgl.page.previous]
+            widgets:
+              - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
+              - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_2}"}
+              - label: {id: lbl_room_2, align: BOTTOM_RIGHT, text_font: f_room, text: "--"}
+        - obj:
+            styles: card
+            x: 320
+            y: 8
+            width: 148
+            height: 156
+            clickable: true
+            on_click: [lvgl.page.previous]
+            widgets:
+              - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
+              - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_3}"}
+              - label: {id: lbl_room_3, align: BOTTOM_RIGHT, text_font: f_room, text: "--"}
+        - obj:
+            styles: card
+            x: 476
+            y: 8
+            width: 148
+            height: 156
+            clickable: true
+            on_click: [lvgl.page.previous]
+            widgets:
+              - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
+              - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_4}"}
+              - label: {id: lbl_room_4, align: BOTTOM_RIGHT, text_font: f_room, text: "--"}

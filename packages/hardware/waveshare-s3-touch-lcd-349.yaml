@@ -1,0 +1,104 @@
+# =============================================================================
+# Hardware: Waveshare ESP32-S3-Touch-LCD-3.49 (172x640, AXS15231B QSPI + touch I2C)
+#
+# Pinout e parametri display presi da un progetto della community che funziona:
+#   https://github.com/cryptooth/homeassistant-waveshare-lcd349 (MIT)
+#
+# Il pannello è nativamente verticale (172x640); qui lo usiamo orizzontale
+# (640x172) con rotation 90. Se l'immagine o il touch risultano capovolti,
+# regola display_rotation e touch_* nelle substitutions.
+#
+# Versione senza batteria: il latch di alimentazione (TCA9554) non serve.
+# Per un'altra scheda basta un file che esponga tft_display, tft_touch e
+# display_backlight.
+# =============================================================================
+
+esp32:
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+spi:
+  id: quad_spi
+  type: quad
+  clk_pin: GPIO10
+  data_pins: [GPIO11, GPIO12, GPIO13, GPIO14]
+
+i2c:
+  - id: bus_touch
+    sda: GPIO17
+    scl: GPIO18
+    frequency: 400kHz
+  # Bus generale (IMU, RTC, IO expander, codec): non usato per ora
+  - id: bus_sys
+    sda: GPIO47
+    scl: GPIO48
+    frequency: 400kHz
+
+output:
+  - platform: ledc
+    id: backlight_pwm
+    pin: GPIO8
+    frequency: 5000Hz
+    inverted: true
+
+light:
+  - platform: monochromatic
+    id: display_backlight
+    name: "Retroilluminazione"
+    icon: mdi:brightness-6
+    output: backlight_pwm
+    restore_mode: ALWAYS_ON
+    default_transition_length: 300ms
+
+display:
+  - platform: qspi_dbi
+    id: tft_display
+    model: AXS15231
+    spi_id: quad_spi
+    cs_pin: GPIO9
+    reset_pin: GPIO21
+    data_rate: 40MHz
+    spi_mode: mode0
+    dimensions:
+      width: 172
+      height: 640
+    color_order: rgb
+    invert_colors: false
+    brightness: 255
+    draw_from_origin: true
+    draw_rounding: 16            # il controller accetta solo aree allineate
+    update_interval: never
+    auto_clear_enabled: false
+
+touchscreen:
+  - platform: axs15231
+    id: tft_touch
+    i2c_id: bus_touch
+    display: tft_display
+    transform:
+      swap_xy: ${touch_swap_xy}
+      mirror_x: ${touch_mirror_x}
+      mirror_y: ${touch_mirror_y}
+    on_touch:
+      - lambda: |-
+          id(g_touch_x0) = touch.x;
+          id(g_touch_y0) = touch.y;
+          id(g_touch_x1) = touch.x;
+          id(g_touch_y1) = touch.y;
+          id(g_touch_t0) = millis();
+    on_update:
+      - lambda: |-
+          if (touches.empty()) return;
+          id(g_touch_x1) = touches.front().x;
+          id(g_touch_y1) = touches.front().y;
+    on_release:
+      - light.turn_on:
+          id: display_backlight
+          brightness: ${brightness_active}
+      - script.execute: handle_swipe
