@@ -71,7 +71,7 @@ secrets.example.yaml
 | `ent_room_N` / `label_room_N` | — | N = 1..4 |
 | `display_rotation` | `90` | `270` per capovolgere |
 | `touch_swap_xy` / `touch_mirror_x` / `touch_mirror_y` | `true` / `false` / `true` | calibrazione touch |
-| `idle_timeout` | `60s` | |
+| `idle_timeout` | `60s` | il dimming si disattiva da HA con lo switch **Dimming automatico** |
 | `brightness_active` / `brightness_idle` | `100%` / `15%` | |
 
 **Temperatura esterna da un'entità `weather`**: crea un template sensor in HA

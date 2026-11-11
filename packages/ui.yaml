@@ -169,13 +169,18 @@ lvgl:
   buffer_size: 100%
   full_refresh: true          # l'AXS15231 non gestisce bene i refresh parziali
   page_wrap: true
+  log_level: INFO
   bg_color: c_bg
   on_idle:
     timeout: ${idle_timeout}
     then:
-      - light.turn_on:
-          id: display_backlight
-          brightness: ${brightness_idle}
+      - if:
+          condition:
+            switch.is_on: sw_dimming
+          then:
+            - light.turn_on:
+                id: display_backlight
+                brightness: ${brightness_idle}
   theme:
     button:
       bg_color: c_track
@@ -296,6 +301,7 @@ lvgl:
             height: 156
             clickable: true
             on_click:
+              - logger.log: "click card orario"
               - lvgl.page.next:
             widgets:
               - label:
@@ -342,6 +348,7 @@ lvgl:
             width: 74
             height: 156
             on_click:
+              - logger.log: "click btn_light_1"
               - homeassistant.action:
                   action: homeassistant.toggle
                   data:
@@ -356,6 +363,7 @@ lvgl:
             width: 74
             height: 156
             on_click:
+              - logger.log: "click btn_light_2"
               - homeassistant.action:
                   action: homeassistant.toggle
                   data:
@@ -370,6 +378,7 @@ lvgl:
             width: 74
             height: 156
             on_click:
+              - logger.log: "click btn_light_3"
               - homeassistant.action:
                   action: homeassistant.toggle
                   data:
@@ -392,7 +401,9 @@ lvgl:
             width: 148
             height: 156
             clickable: true
-            on_click: [lvgl.page.previous]
+            on_click:
+              - logger.log: "click stanza 1"
+              - lvgl.page.previous:
             widgets:
               - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
               - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_1}"}
@@ -404,7 +415,9 @@ lvgl:
             width: 148
             height: 156
             clickable: true
-            on_click: [lvgl.page.previous]
+            on_click:
+              - logger.log: "click stanza 2"
+              - lvgl.page.previous:
             widgets:
               - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
               - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_2}"}
@@ -416,7 +429,9 @@ lvgl:
             width: 148
             height: 156
             clickable: true
-            on_click: [lvgl.page.previous]
+            on_click:
+              - logger.log: "click stanza 3"
+              - lvgl.page.previous:
             widgets:
               - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
               - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_3}"}
@@ -428,7 +443,9 @@ lvgl:
             width: 148
             height: 156
             clickable: true
-            on_click: [lvgl.page.previous]
+            on_click:
+              - logger.log: "click stanza 4"
+              - lvgl.page.previous:
             widgets:
               - label: {styles: muted, text_font: f_icons, text: "\U000F050F"}
               - label: {x: 24, y: 1, width: 100, long_mode: DOT, text: "${label_room_4}"}
