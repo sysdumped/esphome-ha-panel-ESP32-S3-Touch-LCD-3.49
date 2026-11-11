@@ -16,7 +16,7 @@ Niente custom integration, niente blueprint: tutta la logica sta nello YAML.
 - 4 temperature in fila
 
 Cambio pagina: swipe orizzontale, oppure tocco sulla card dell'orario
-(e su una stanza per tornare indietro). Dopo un periodo di inattività la
+(e su una stanza per tornare indietro). Dopo un periodo di inattività (regolabile da HA, disattivabile con lo switch **Dimming automatico**) la
 luminosità si abbassa; il tocco la riporta piena.
 
 ## Hardware
@@ -71,8 +71,9 @@ secrets.example.yaml
 | `ent_room_N` / `label_room_N` | — | N = 1..4 |
 | `display_rotation` | `90` | `270` per capovolgere |
 | `touch_swap_xy` / `touch_mirror_x` / `touch_mirror_y` | `true` / `false` / `true` | calibrazione touch |
-| `idle_timeout` | `60s` | il dimming si disattiva da HA con lo switch **Dimming automatico** |
-| `brightness_active` / `brightness_idle` | `100%` / `15%` | |
+| `idle_timeout` | `60` | secondi, valore iniziale; poi si regola da HA con **Timeout dimming** |
+| `brightness_active` | `100%` | luminosità al tocco |
+| `brightness_idle` | `15` | %, valore iniziale; poi si regola da HA con **Luminosità a riposo** |
 | `log_level` / `lvgl_log_level` | `INFO` / `WARN` | `DEBUG` / `INFO` per diagnosticare il touch |
 
 **Temperatura esterna da un'entità `weather`**: crea un template sensor in HA
