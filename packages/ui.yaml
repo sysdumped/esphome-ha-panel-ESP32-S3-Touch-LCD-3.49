@@ -169,7 +169,7 @@ lvgl:
   buffer_size: 100%
   full_refresh: true          # l'AXS15231 non gestisce bene i refresh parziali
   page_wrap: true
-  log_level: INFO
+  log_level: ${lvgl_log_level}
   bg_color: c_bg
   on_idle:
     timeout: ${idle_timeout}

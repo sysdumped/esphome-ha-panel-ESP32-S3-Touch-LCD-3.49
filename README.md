@@ -73,6 +73,7 @@ secrets.example.yaml
 | `touch_swap_xy` / `touch_mirror_x` / `touch_mirror_y` | `true` / `false` / `true` | calibrazione touch |
 | `idle_timeout` | `60s` | il dimming si disattiva da HA con lo switch **Dimming automatico** |
 | `brightness_active` / `brightness_idle` | `100%` / `15%` | |
+| `log_level` / `lvgl_log_level` | `INFO` / `WARN` | `DEBUG` / `INFO` per diagnosticare il touch |
 
 **Temperatura esterna da un'entità `weather`**: crea un template sensor in HA
 (`{{ state_attr('weather.casa', 'temperature') }}`) e usalo come `ent_temp_out`.
